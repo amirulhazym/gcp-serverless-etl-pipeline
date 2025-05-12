@@ -1,0 +1,21 @@
+# Virtual Environment
+gcp2env/
+venv/
+*.pyc
+__pycache__/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Local data files (we'll upload to GCS)
+*.csv 
+# Or be more specific if you have CSVs you DO want to track
+# sample_data/transactions.csv 
+
+# GCP credential files (SHOULD NEVER be committed)
+*.json
