@@ -2,7 +2,6 @@
 
 An automated data pipeline built on Google Cloud Platform (GCP) that processes CSV files uploaded to Cloud Storage (GCS). The data is transformed by a Python Cloud Function (Gen 2, running on Cloud Run) with pandas, and then loaded into BigQuery for analysis. This project demonstrates a practical, event-driven, serverless ETL (Extract, Transform, Load) workflow.
 
-**(Optional: Add a simple architecture diagram GIF or PNG here!)**
 <!-- Example: ![Data Pipeline Architecture](docs/images/mp2_architecture.png) -->
 <!-- Diagram could show: [CSV Upload] -> [GCS Bucket] --(Eventarc Trigger)--> [Cloud Function (executing on Cloud Run)] --> [Python/Pandas Transform] --> [BigQuery Table] -->
 
