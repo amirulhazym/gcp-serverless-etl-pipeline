@@ -87,50 +87,114 @@ gcp-data-pipeline/
 └── README.md                # This file
 ```
 
-## 🚀 Local Setup & Deployment
+## 🚀 Local Setup, Execution & Deployment
 
-### GCP Prerequisites
+This section provides a complete, end-to-end guide to get the pipeline running. It covers preparing your local machine, provisioning the cloud infrastructure, deploying the function, and finally, executing the pipeline to process data.
 
-- **GCP Project**: An active project with billing enabled.
-- **Enabled APIs**: Cloud Functions, Cloud Storage, BigQuery, Cloud Build, Eventarc, and Cloud Run APIs.
-- **GCS Bucket**: A globally unique GCS bucket created in your desired region.
-- **BigQuery**: A BigQuery Dataset created, containing a target Table with a predefined schema.
-- **gcloud CLI**: Installed, configured, and authenticated (gcloud auth login, gcloud auth application-default login).
+### Step 1: Local Setup & Authentication
 
-### Deployment Steps
+Prepare your local machine to interact with your GCP project.
 
-**Clone the Repository:**
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/amirulhazym/gcp-serverless-etl-pipeline.git
+    cd gcp-serverless-etl-pipeline
+    ```
 
-```bash
-git clone https://github.com/amirulhazym/gcp-serverless-data-pipeline.git
-cd gcp-serverless-data-pipeline
-```
+2.  **Configure the gcloud CLI:**
+    Set the default project where all resources will be created.
+    ```bash
+    # Replace with your actual GCP Project ID
+    gcloud config set project YOUR_GCP_PROJECT_ID
+    ```
 
-**Configure the Function:**
+3.  **Authenticate Your Credentials:**
+    Log in and create Application Default Credentials, allowing your local machine to make authenticated API calls to GCP.
+    ```bash
+    gcloud auth login
+    gcloud auth application-default login
+    ```
 
-Modify cloud_function_source/main.py and update the global variables (TARGET_BIGQUERY_PROJECT_ID, TARGET_DATASET, TARGET_TABLE) to match your GCP setup.
+### Step 2: Provision Cloud Infrastructure
 
-**Deploy the Cloud Function:**
+Create the necessary GCS and BigQuery resources that the Cloud Function will interact with.
 
-Run the following command from the project root, replacing all placeholders with your specific values.
+1.  **Create GCS Bucket:**
+    This is the pipeline's entry point. **Note: Bucket names must be globally unique.**
+    ```bash
+    # Replace with a unique name and your desired region (e.g., asia-southeast1)
+    gcloud storage buckets create gs://YOUR-UNIQUE-GCS-BUCKET-NAME --location=YOUR_GCP_REGION
+    ```
 
-```powershell
-gcloud functions deploy your-function-name `
-  --gen2 `
-  --runtime python311 `
-  --region your-gcp-region `
-  --source ./cloud_function_source/ `
-  --entry-point process_gcs_csv_to_bq `
-  --trigger-event-filters="type=google.cloud.storage.object.v1.finalized" `
-  --trigger-event-filters="bucket=your-gcs-input-bucket-name" `
-  --memory=512MiB
-```
+2.  **Create BigQuery Dataset:**
+    This is a container for your tables.
+    ```bash
+    # Replace with a dataset name like 'pipeline_output'
+    bq mk --dataset YOUR_GCP_PROJECT_ID:YOUR_DATASET_NAME
+    ```
 
-### Testing the Pipeline
+3.  **Create BigQuery Table with Schema:**
+    This command creates the destination table with the precise structure required by the function.
+    ```bash
+    # Replace with a table name like 'transformed_user_events'
+    bq mk --table YOUR_GCP_PROJECT_ID:YOUR_DATASET_NAME.YOUR_TABLE_NAME \
+    user_id:STRING,event_timestamp:TIMESTAMP,country_code:STRING,value:FLOAT,is_high_value:BOOLEAN,processing_datetime:TIMESTAMP
+    ```
 
-1. Upload the sample_data/user_events_input.csv file to your GCS input bucket.
-2. **Monitor Logs**: Navigate to Cloud Logging (accessible from the Cloud Run or Cloud Functions UI) to view the execution logs of your function.
-3. **Verify Data**: Query the target table in BigQuery to confirm that the transformed data has been successfully loaded.
+### Step 3: Deployment
+
+Configure the function's code and deploy it to Google Cloud.
+
+1.  **Configure Function Source Code:**
+    Open the file `cloud_function_source/main.py` and update the global variables to match the resources you created above.
+    ```python
+    # === CONFIGURE THESE VALUES IN main.py ===
+    TARGET_BIGQUERY_PROJECT_ID = "YOUR_GCP_PROJECT_ID"
+    TARGET_DATASET = "YOUR_DATASET_NAME"
+    TARGET_TABLE = "YOUR_TABLE_NAME"
+    # =========================================
+    ```
+
+2.  **Deploy to Cloud Functions:**
+    Execute the following command from the project's root directory. This will package, upload, and deploy your function, automatically setting up the GCS trigger.
+
+    **Replace the following placeholders:**
+    -   `your-function-name`: A name for your function (e.g., `gcs-to-bq-etl-processor`).
+    -   `your-gcp-region`: The **same region** as your GCS bucket.
+    -   `your-unique-gcs-bucket-name`: The GCS bucket name from Step 2.
+
+    ```powershell
+    gcloud functions deploy your-function-name `
+      --gen2 `
+      --runtime python311 `
+      --region your-gcp-region `
+      --source ./cloud_function_source/ `
+      --entry-point process_gcs_csv_to_bq `
+      --trigger-event-filters="type=google.cloud.storage.object.v1.finalized" `
+      --trigger-event-filters="bucket=your-unique-gcs-bucket-name" `
+      --memory=512MiB
+    ```
+
+### Step 4: Execution & Verification
+
+With everything deployed, trigger the pipeline and verify the result.
+
+1.  **Execute the Pipeline:**
+    Upload the sample data file to your GCS bucket using the `gcloud` CLI. This action will trigger the function.
+    ```bash
+    gcloud storage cp sample_data/user_events_input.csv gs://YOUR-UNIQUE-GCS-BUCKET-NAME/
+    ```
+
+2.  **Verify the Execution Logs:**
+    Check the function's logs in the GCP Console to confirm it ran successfully. You can find these by navigating to `Cloud Functions` > `(your-function-name)` > `LOGS`. Look for a successful completion message.
+
+3.  **Verify the Final Data:**
+    Query your BigQuery table to see the final, transformed data.
+    ```sql
+    -- Run this query in the BigQuery UI
+    SELECT * FROM `YOUR_GCP_PROJECT_ID.YOUR_DATASET_NAME.YOUR_TABLE_NAME` LIMIT 100;
+    ```
+    You should see the contents of the CSV file, cleaned and structured according to the Python script's logic.
 
 ## 💡 Key Challenges & Learnings
 
