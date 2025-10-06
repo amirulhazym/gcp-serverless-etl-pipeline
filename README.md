@@ -184,17 +184,20 @@ With everything deployed, trigger the pipeline and verify the result.
     ```bash
     gcloud storage cp sample_data/user_events_input.csv gs://YOUR-UNIQUE-GCS-BUCKET-NAME/
     ```
+    ![Trigger file](images/gcs_trigger_file.png)
 
 2.  **Verify the Execution Logs:**
     Check the function's logs in the GCP Console to confirm it ran successfully. You can find these by navigating to `Cloud Functions` > `(your-function-name)` > `LOGS`. Look for a successful completion message.
-
-3.  **Verify the Final Data:**
+![Logs](images/cloudfunction_logs.png)
+ 
+4.  **Verify the Final Data:**
     Query your BigQuery table to see the final, transformed data.
     ```sql
     -- Run this query in the BigQuery UI
     SELECT * FROM `YOUR_GCP_PROJECT_ID.YOUR_DATASET_NAME.YOUR_TABLE_NAME` LIMIT 100;
     ```
-    You should see the contents of the CSV file, cleaned and structured according to the Python script's logic.
+    You should see the contents of the CSV file, cleaned and structured according to the Python script's logic. Example:
+    ![Pipeline output](images/final_pipeline_output.png)
 
 ## 💡 Key Challenges & Learnings
 
